@@ -40,9 +40,8 @@
   <body>
     <textarea id="source">
 
-```tut:invisible
 
-```
+
 class: center, middle, inverse
 
 # Stack up your library with monad transformers
@@ -53,7 +52,7 @@ Ross A. Baker • [`@rossabaker`](https://twitter.com/rossabaker) • [Formation
 - notes here
 - see https://remarkjs.com/#1
 
-```tut:silent
+```scala
 import cats._, cats.data._, cats.implicits._
 import cats.effect._
 import io.circe._, io.circe.syntax._, io.circe.generic.auto._
@@ -68,24 +67,27 @@ import typelevel2019.hockey._
 
 This year in Philly
 
-```tut:book
+```scala
 val phi = HockeyDb[Option].captain("PHI")
+// phi: Option[typelevel2019.hockey.Player] = Some(Player(Claude,Giroux,RW,PHI))
 ```
 
 --
 
 Last year in Boston
 
-```tut:book
+```scala
 val bos = HockeyDb[Option].captain("BOS")
+// bos: Option[typelevel2019.hockey.Player] = Some(Player(Zdeno,Chara,D,BOS))
 ```
 
 --
 
 Next year in New York .red[*]
 
-```tut:book
+```scala
 val nyr = HockeyDb[Option].captain("NYR")
+// nyr: Option[typelevel2019.hockey.Player] = None
 ```
 
 .footnote[.red[*] I'm going to ignore the Islanders, just like New York]
@@ -98,16 +100,24 @@ val nyr = HockeyDb[Option].captain("NYR")
 
 Mapping over `Some` returns `Some`
 
-```tut:book
+```scala
 phi.map(crossCheck).map(slash).map(renderPlayer)
+// res0: Option[io.circe.Json] =
+// Some({
+//   "firstName" : "Claude",
+//   "lastName" : "Giroux",
+//   "position" : "RW",
+//   "team" : "PHI"
+// })
 ```
 
 --
 
 Mapping `None` returns `None`
 
-```tut:book
+```scala
 nyr.map(crossCheck).map(slash).map(renderPlayer)
+// res1: Option[io.circe.Json] = None
 ```
 
 ---
@@ -118,20 +128,23 @@ nyr.map(crossCheck).map(slash).map(renderPlayer)
 
 Philly
 
-```tut:book
+```scala
 val phi = HockeyDb[Future].captain("PHI")
+// phi: scala.concurrent.Future[typelevel2019.hockey.Player] = Future(Success(Player(Claude,Giroux,RW,PHI)))
 ```
 
 Boston
 
-```tut:book
+```scala
 val bos = HockeyDb[Future].captain("BOS")
+// bos: scala.concurrent.Future[typelevel2019.hockey.Player] = Future(Success(Player(Zdeno,Chara,D,BOS)))
 ```
 
 New York
 
-```tut:book
+```scala
 val nyr = HockeyDb[Future].captain("NYR")
+// nyr: scala.concurrent.Future[typelevel2019.hockey.Player] = Future(Failure(java.util.NoSuchElementException))
 ```
 
 ---
@@ -142,16 +155,24 @@ val nyr = HockeyDb[Future].captain("NYR")
 
 Maps `Success` to `Success`
 
-```tut:book
+```scala
 phi.map(crossCheck).map(slash).map(renderPlayer)
+// res2: scala.concurrent.Future[io.circe.Json] =
+// Future(Success({
+//   "firstName" : "Claude",
+//   "lastName" : "Giroux",
+//   "position" : "RW",
+//   "team" : "PHI"
+// }))
 ```
 
 --
 
 Maps `Failure` to `Failure`
 
-```tut:book
+```scala
 nyr.map(crossCheck).map(slash).map(renderPlayer)
+// res3: scala.concurrent.Future[io.circe.Json] = Future(Failure(java.util.NoSuchElementException))
 ```
 
 ---
@@ -165,36 +186,55 @@ nyr.map(crossCheck).map(slash).map(renderPlayer)
 
 # An asynchronously optional database
 
-```tut:book
+```scala
 type FutureOption[A] = Future[Option[A]]
+// defined type alias FutureOption
 ```
 
 --
 
 Philly
 
-```tut:book
+```scala
 val phi = HockeyDb[FutureOption].captain("PHI")
+// phi: FutureOption[typelevel2019.hockey.Player] = Future(Success(Some(Player(Claude,Giroux,RW,PHI))))
 ```
 
 Boston
 
-```tut:book
+```scala
 val bos = HockeyDb[FutureOption].captain("BOS")
+// bos: FutureOption[typelevel2019.hockey.Player] = Future(Success(Some(Player(Zdeno,Chara,D,BOS))))
 ```
 
 New York
 
-```tut:book
+```scala
 val nyr = HockeyDb[FutureOption].captain("NYR")
+// nyr: FutureOption[typelevel2019.hockey.Player] = Future(Success(None))
 ```
 
 ---
 
 # `FutureOption#map`
 
-```tut:fail
-phi.map(crossCheck).map(slash).map(renderPlayer)
+```scala
+scala> phi.map(crossCheck).map(slash).map(renderPlayer)
+<console>:44: error: type mismatch;
+ found   : typelevel2019.hockey.Player => typelevel2019.hockey.Player
+ required: Option[typelevel2019.hockey.Player] => ?
+       phi.map(crossCheck).map(slash).map(renderPlayer)
+               ^
+<console>:44: error: missing argument list for method slash in package hockey
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `slash _` or `slash(_)` instead of `slash`.
+       phi.map(crossCheck).map(slash).map(renderPlayer)
+                               ^
+<console>:44: error: missing argument list for method renderPlayer in package hockey
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `renderPlayer _` or `renderPlayer(_)` instead of `renderPlayer`.
+       phi.map(crossCheck).map(slash).map(renderPlayer)
+                                          ^
 ```
 
 ---
@@ -203,16 +243,30 @@ phi.map(crossCheck).map(slash).map(renderPlayer)
 
 Two effects, so map it twice:
 
-```tut:book
+```scala
 phi.map(_.map(crossCheck)).map(_.map(slash)).map(_.map(renderPlayer))
+// res5: scala.concurrent.Future[Option[io.circe.Json]] =
+// Future(Success(Some({
+//   "firstName" : "Claude",
+//   "lastName" : "Giroux",
+//   "position" : "RW",
+//   "team" : "PHI"
+// })))
 ```
 
 --
 
 Better, but still not great:
 
-```tut:book
+```scala
 phi.map(_.map(crossCheck).map(slash).map(renderPlayer))
+// res6: scala.concurrent.Future[Option[io.circe.Json]] =
+// Future(Success(Some({
+//   "firstName" : "Claude",
+//   "lastName" : "Giroux",
+//   "position" : "RW",
+//   "team" : "PHI"
+// })))
 ```
 
 ---
@@ -221,24 +275,36 @@ phi.map(_.map(crossCheck).map(slash).map(renderPlayer))
 
 A helper for nesting
 
-```tut:silent
+```scala
 type FutureOption[A] = cats.data.Nested[Future, Option, A]
 ```
 
 --
 
-```tut:book
+```scala
 val phi = HockeyDb[FutureOption].captain("PHI")
+// phi: FutureOption[typelevel2019.hockey.Player] = Nested(Future(Success(Some(Player(Claude,Giroux,RW,PHI)))))
+
 val bos = HockeyDb[FutureOption].captain("BOS")
+// bos: FutureOption[typelevel2019.hockey.Player] = Nested(Future(Success(Some(Player(Zdeno,Chara,D,BOS)))))
+
 val nyr = HockeyDb[FutureOption].captain("NYR")
+// nyr: FutureOption[typelevel2019.hockey.Player] = Nested(Future(Success(None)))
 ```
 
 --
 
 Two effects, one map:
 
-```tut:book
+```scala
 phi.map(crossCheck).map(slash).map(renderPlayer)
+// res7: FutureOption[io.circe.Json] =
+// Nested(Future(Success(Some({
+//   "firstName" : "Claude",
+//   "lastName" : "Giroux",
+//   "position" : "RW",
+//   "team" : "PHI"
+// }))))
 ```
 
 ---
@@ -247,11 +313,12 @@ phi.map(crossCheck).map(slash).map(renderPlayer)
 
 If `F` and `G` are both `Functor`s .red[*], we can nest them as one `Functor`:
 
-```tut:book
+```scala
 case class MyNested[F[_]: Functor, G[_]: Functor, A](val fga: F[G[A]]) {
   def map[B](f: A => B): MyNested[F, G, B] =
     MyNested(fga.map(_.map(f)))
 }
+// defined class MyNested
 ```
 
 .footnote[.red[*] Quick explanation: most things with `.map` are f`Functor`s. [Better explanation](https://typelevel.org/cats/typeclasses/functor.html)]
@@ -260,11 +327,14 @@ case class MyNested[F[_]: Functor, G[_]: Functor, A](val fga: F[G[A]]) {
 
 # Sequential computations
 
-```tut:fail
-for {
-  captain <- HockeyDb[FutureOption].captain("PHI")
-  stats   <- HockeyDb[FutureOption].stats(captain.lastName)
-} yield stats.goals + stats.assists
+```scala
+scala> for {
+     |   captain <- HockeyDb[FutureOption].captain("PHI")
+     |   stats   <- HockeyDb[FutureOption].stats(captain.lastName)
+     | } yield stats.goals + stats.assists
+<console>:45: error: value flatMap is not a member of FutureOption[typelevel2019.hockey.Player]
+         captain <- HockeyDb[FutureOption].captain("PHI")
+                                                  ^
 ```
 
 --
@@ -291,26 +361,28 @@ Monads don't compose.
 
 # You can compose them with some magic
 
-```tut:book
+```scala
 case class MyNested[F[_]: Monad, G[_]: Monad, A](val fga: F[G[A]]) {
   def flatMap[B](f: A => MyNested[F, G, B]): MyNested[F, G, B] =
     MyNested(fga.flatMap(ga => magic(ga.map(f.andThen(_.fga)))))
 	
   def magic[B](gfgb: G[F[G[B]]]): F[G[B]] = ???
 }
+// defined class MyNested
 ```
 
 ---
 
 # Monads can be flattend
 
-```tut:book
+```scala
 case class MyNested[F[_]: Monad, G[_]: Monad, A](val fga: F[G[A]]) {
   def flatMap[B](f: A => MyNested[F, G, B]): MyNested[F, G, B] =
     MyNested(fga.flatMap(ga => magic(ga.map(f.andThen(_.fga))).map(_.flatten)))
 
   def magic[B](gfb: G[F[B]]): F[G[B]] = ???
 }
+// defined class MyNested
 ```
 
 `.flatten` turns `G[G[A]]` into `G[A]`.  Now we just need to flip the `F` and the `G`.
@@ -329,7 +401,7 @@ This is the audience participation part of our talk.
 def traverse[F[_], G[_]](fa: F[A])(f: A => G[B]): G[F[B]]
 ```
 
-```tut:silent
+```scala
 case class MyNested[F[_]: Monad, G[_]: Monad: Traverse, A](fga: F[G[A]]) {
   def flatMap[B](f: A => MyNested[F, G, B]): MyNested[F, G, B] =
     MyNested(fga.flatMap(ga => ga.traverse(f.andThen(_.fga)).map(_.flatten)))
@@ -340,22 +412,19 @@ case class MyNested[F[_]: Monad, G[_]: Monad: Traverse, A](fga: F[G[A]]) {
 type FutureOption[A] = MyNested[Future, Option, A]
 ```
 
-```tut:invisible
-implicit val nfo = new HockeyDb[FutureOption] {
-  def captain(team: String): FutureOption[Player] = MyNested(HockeyDb.futureOption.captain(team))
-  def stats(lastName: String): FutureOption[Stats] = MyNested(HockeyDb.futureOption.stats(lastName))
-}
-```
+
+
 
 .footnote[.red[*] Both `Monad` and `Traverse` are `Functor`s, so we have to pick one in `map`. It shouldn't matter which.]
 
 --
 
-```tut:book
+```scala
 for {
   captain <- HockeyDb[FutureOption].captain("PHI")
   stats   <- HockeyDb[FutureOption].stats(captain.lastName)
 } yield stats.goals + stats.assists
+// res9: MyNested[scala.concurrent.Future,Option,Int] = MyNested(Future(Success(Some(756))))
 ```
 
 ---
@@ -364,13 +433,14 @@ for {
 
 But it's an anemic monad.
 
-```tut:book
+```scala
 (for {
   captain <- HockeyDb[FutureOption].captain("PHI")
   stats   <- HockeyDb[FutureOption].stats(captain.lastName)
 } yield stats.goals + stats.assists).
   fga.
   map(_.getOrElse(0))
+// res10: scala.concurrent.Future[Int] = Future(Success(756))
 ```
 
 .footnote[.red[*] The Art Ross trophy is awarded to the leader in goals plus assists. No Philadelphia Flyer has ever won it.]
@@ -392,7 +462,7 @@ To eliminate the `Option`, we have to:
 
 A compromise between generality and convenience
 
-```tut:silent
+```scala
 case class OptionT[F[_]: Monad, A](value: F[Option[A]]) {
   def flatMap[B](f: A => OptionT[F, B]): OptionT[F, B] =
     OptionT(value.flatMap(ga => ga.traverse(f.andThen(_.value)).map(_.flatten)))
@@ -406,21 +476,18 @@ case class OptionT[F[_]: Monad, A](value: F[Option[A]]) {
 }
 ```
 
-```tut:invisible
-implicit def nfo[F[_]: Monad] = new HockeyDb[OptionT[F, ?]] {
-  def captain(team: String): OptionT[F, Player] = OptionT(HockeyDb.option.captain(team).pure[F])
-  def stats(lastName: String): OptionT[F, Stats] = OptionT(HockeyDb.option.stats(lastName).pure[F])
-}
-```
+
+
 
 --
 
-```tut:book
+```scala
 (for {
   captain <- HockeyDb[OptionT[Future, ?]].captain("PHI")
   stats   <- HockeyDb[OptionT[Future, ?]].stats(captain.lastName)
 } yield stats.goals + stats.assists).
   getOrElse(0)
+// res11: scala.concurrent.Future[Int] = Future(Success(756))
 ```
 
 .footnote[.red[*] `OptionT[Future, ?]` is from [kind-projector](https://github.com/non/kind-projector). Without it, we'd say `({type λ[A] = OptionT[F, A]})#λ`]
@@ -505,7 +572,7 @@ object OptionT {
 
 Not without unutterable horror:
 
-```tut:silent
+```scala
 case class FutureT[F[_]: Monad, A](value: F[Future[A]]) {
   def flatMap[B](f: A => FutureT[F, B]): FutureT[F, B] =
     FutureT(value.flatMap(fut => traverse(fut)(f.andThen(_.value)).map(_.flatten)))
@@ -520,13 +587,12 @@ case class FutureT[F[_]: Monad, A](value: F[Future[A]]) {
 ---
 # EitherT
 
-```tut:invisible
-import org.http4s._, Method._, Status._, Uri.uri
-```
+
+
 
 A monadic DSL using `EitherT` to embed errors:
 
-```tut:silent
+```scala
 sealed trait Rejection
 case class MethodRejection(supported: Method) extends Rejection
 case class MissingQueryParameter(parameterName: String) extends Rejection
@@ -554,7 +620,7 @@ Cool, but how do we make it depend on a request?
 
 A monadic DSL using `Kleisli` to embed a function call:
 
-```tut:silent
+```scala
 sealed trait Rejection extends Throwable
 case class MethodRejection(supported: Method) extends Rejection
 case class MissingQueryParameter(parameterName: String) extends Rejection
@@ -594,13 +660,10 @@ Since a monad transformer takes a monad as an input and produces a
 monad as output, a monad transformer can be the input type to a new
 monad transformer.
 
-```tut:invisible
-sealed trait Rejection
-case class MethodRejection(supported: Method) extends Rejection
-case class MissingQueryParameter(parameterName: String) extends Rejection
-```
 
-```tut:silent
+
+
+```scala
 type ResultT[F[_], A] = EitherT[F, Rejection, A]
 type Directive[F[_], A] = Kleisli[ResultT[F, ?], Request[F], A]
 def success[F[_]: Applicative, A](a: A): ResultT[F, A] = 
@@ -622,7 +685,7 @@ def queryParam[F[_]: Applicative](name: String): Directive[F, String] =
 ---
 # Does it work?
 
-```tut:silent
+```scala
 val svc = for {
   _ <- get[IO]
   name <- queryParam[IO]("name")
@@ -635,10 +698,15 @@ def run[A](r: ResultT[IO, A]) = r.valueOr {
 }.unsafeRunSync()
 ```
 
-```tut:book
+```scala
 run(svc(Request(GET,    uri("/"))))
+// res13: Any = Response(status=400, headers=Headers())
+
 run(svc(Request(DELETE, uri("/?name=gritty"))))
+// res14: Any = Response(status=405, headers=Headers())
+
 run(svc(Request(GET,    uri("/?name=gritty"))))
+// res15: Any = Response(status=200, headers=Headers(Content-Length: 13, Content-Type: text/plain; charset=UTF-8))
 ```
 
 .footnote[.red[*] This is the general idea behind [http4s-directives](https://github.com/scalabin-no/http4s-directives), which is based on [Unfiltered directives](https://unfiltered.ws/07/00.html), which originated in the Northeast]
@@ -691,7 +759,7 @@ poweredBy("akka-http") { _ =>
 ---
 # ContT
 
-```tut:silent
+```scala
 type ResultT[F[_], A] = EitherT[F, Rejection, A]
 type Route[F[_], A] = Kleisli[ResultT[F, ?], Request[F], A]
 type Directive[F[_], A] = ContT[Route[F, ?], Response[F], A]
@@ -716,7 +784,7 @@ type Directive[F[_], A] = ContT[Route[F, ?], Response[F], A]
 
 # akka4http4s
 
-```tut:silent
+```scala
 def queryParam[F[_]: Applicative](name: String): Directive[F, String] =
   ContT { k => Kleisli { req =>
     req.params.get(name) match {
@@ -736,7 +804,7 @@ def complete[F[_]: Applicative](response: Response[F]): Route[F, Response[F]] =
 
 ---
 # Does it work?
-```tut:silent
+```scala
 val svc = poweredBy[IO]("The ContT monad transformer") run { _ =>
   get[IO] run { _ =>
     queryParam[IO]("name") run { name =>
@@ -747,8 +815,9 @@ val svc = poweredBy[IO]("The ContT monad transformer") run { _ =>
 }
 ```
 
-```tut:book
+```scala
 run(svc(Request(GET, uri("/?name=gritty"))))
+// res16: Any = Response(status=200, headers=Headers(Content-Length: 13, Content-Type: text/plain; charset=UTF-8, X-Powered-By: The ContT monad transformer))
 ```
 
 .footnote[.red[*] This doesn't exist for http4s yet, but if you'd like it to, let's talk.]

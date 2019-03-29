@@ -8,10 +8,12 @@ lazy val baseSettings: Seq[Setting[_]] = Seq(
     "-language:implicitConversions", "-language:existentials",
     "-unchecked",
     "-Yno-adapted-args",
+    "-Ypartial-unification",
     "-Ywarn-numeric-widen",
     "-Ywarn-value-discard",
     "-Xfuture"
   ),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9"),
   resolvers += Resolver.sonatypeRepo("releases")
 )
 
@@ -24,7 +26,12 @@ lazy val typelevel2019 = project.in(file("."))
 lazy val core = project
   .settings(moduleName := "typelevel2019-core")
   .settings(baseSettings: _*)
-
+  .settings(
+    libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0",
+    libraryDependencies += "org.typelevel" %% "cats-effect" % "1.2.0",    
+    libraryDependencies += "io.circe" %% "circe-generic" % "0.11.0",
+    libraryDependencies += "org.http4s" %% "http4s-dsl" % "0.20.0-M7",
+  )
 
 lazy val slides = project
   .settings(moduleName := "typelevel2019-slides")
